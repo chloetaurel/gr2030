@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Rapids 2030 District</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f8f9fa;
+            color: #000;
+            text-align: center;
+            padding: 10px;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .popup a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .popup a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="popup">
+        For more information on the GR2030 Members and Professional Partners, <a href="https://2030districts.org/grandrapids/members/" target="_blank">click here!</a>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // Map initialization 
+        var map = L.map('map').setView([42.9634, -85.6681], 13);
+
+        // OSM layer
+        var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Voyager layer
+        var voyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        });
+        voyager.addTo(map);
+
+        var partnerIcon = L.icon({
+            iconUrl: 'pin-r.png',
+            iconSize: [35, 50], // size of the icon
+            iconAnchor: [22, 94], // point of the icon which will correspond to marker's location
+            popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
+        });
+
+        // Layer groups for different building types
+        var layerGroups = {
+            "Cannabis": L.layerGroup(),
+            "City Operations": L.layerGroup(),
+            "Commercial": L.layerGroup(),
+            "Fire Station": L.layerGroup(),
+            "Restaurant": L.layerGroup(),
+            "Grocery Store": L.layerGroup(),
+            "Hospital": L.layerGroup(),
+            "Hotel": L.layerGroup(),
+            "House of Worship": L.layerGroup(),
+            "K-12": L.layerGroup(),
+            "Library": L.layerGroup(),
+            "Multifamily": L.layerGroup(),
+            "Museum": L.layerGroup(),
+            "Office": L.layerGroup(),
+            "University": L.layerGroup(),
+            "Retail": L.layerGroup(),
+            "Preschool": L.layerGroup(),
+            "Shelter": L.layerGroup(),
+            "Professional Partners": L.layerGroup()
+        };
+
+        Object.values(layerGroups).forEach(layer => map.addLayer(layer));
+
+        // Fetch BUILDING data from Google Sheets and add markers to the map
+        function fetchBuildingsFromGoogleSheets() {
+            var gr2030buildings = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSDf__FRl4-TfFTdVkpHBrliqumQbE0HWF-4qA665Rq8v6zW1nHvTp3Dw8sG6qsAJh13Ku2h_Dn8NAy/pub?output=csv';
+
+            fetch(gr2030buildings)
+                .then(response => response.text())
+                .then(csvText => {
+                    const rows = csvText.split('\n').slice(1); // Skip the header row
+                    rows.forEach(row => {
+                        const cols = row.split(',');
+                        if (cols.length >= 4) {  // Make sure there are at least 4 columns
+                            const name = cols[0].trim();
+                            const lat = parseFloat(cols[1].trim());
+                            const lng = parseFloat(cols[2].trim());
+                            const type = cols[3].trim();  // Fetch the building type
+
+                            if (name && !isNaN(lat) && !isNaN(lng) && layerGroups[type]) {
+                                var marker = L.marker([lat, lng]).bindPopup(`<b>${name}</b><br>${type}`);
+                                marker.addTo(layerGroups[type]);
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching Google Sheets data:', error));
+        }
+
+        // Fetch and add markers to the map
+        fetchBuildingsFromGoogleSheets();
+
+        // Fetch PROFESSIONAL PARTNER data from Google Sheets and add markers to the map
+        function fetchPartnersFromGoogleSheets() {
+            var gr2030partners = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQAGjYZjUH6q_FS3NMKfGvD58vtdA2z3crEzvhPqZY3C8BDi5ZVGfO9cOCLb-nlnIPsniUpDrPl4tGx/pub?output=csv';
+
+            fetch(gr2030partners)
+                .then(response => response.text())
+                .then(csvText => {
+                    const rows = csvText.split('\n').slice(1); // Skip the header row
+                    rows.forEach(row => {
+                        const cols = row.split(',');
+                        if (cols.length >= 4) {  // Make sure there are at least 4 columns
+                            const name = cols[0].trim();
+                            const lat = parseFloat(cols[1].trim());
+                            const lng = parseFloat(cols[2].trim());
+                            const label = cols[3].trim();  // Fetch the building label
+
+                            if (name && !isNaN(lat) && !isNaN(lng)) {
+                                var marker = L.marker([lat, lng], { icon: partnerIcon }).addTo(layerGroups["Professional Partners"]);
+                                marker.bindPopup(`<b>${name}</b><br>${label}`);  // Add name and label to the popup
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching Google Sheets data:', error));
+        }
+
+        // Fetch and add markers to the map
+        fetchPartnersFromGoogleSheets();
+
+        // Load GeoJSON file and add to map
+        fetch('City_of_Grand_Rapids_City_Limits.geojson')
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: function (feature) {
+                        return { color: "#91335d", weight: 2 };
+                    }
+                }).addTo(map);
+            })
+            .catch(error => console.error('Error loading GeoJSON data:', error));
+
+        // Function to update the visible layer
+        function updateVisibleLayer(selectedLayer) {
+            // Remove all layers
+            Object.values(layerGroups).forEach(layer => map.removeLayer(layer));
+            // Add selected layer
+            if (selectedLayer !== "All") {
+                map.addLayer(layerGroups[selectedLayer]);
+            } else {
+                Object.values(layerGroups).forEach(layer => map.addLayer(layer));
+            }
+        }
+
+        // Add custom control for layer selection
+        var layerControl = L.control({ position: 'topright' });
+        layerControl.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info layer-control');
+            var options = '<form><select id="layerSelect" onchange="updateVisibleLayer(this.value)">';
+            options += '<option value="All">All</option>';
+            Object.keys(layerGroups).forEach(layer => {
+                options += `<option value="${layer}">${layer}</option>`;
+            });
+            options += '</select></form>';
+            div.innerHTML = options;
+            return div;
+        };
+        layerControl.addTo(map);
+
+        // Add layer control to the map
+        L.control.layers(null, layerGroups, { collapsed: true }).addTo(map);
+    </script>
+</body>
+</html>
+
